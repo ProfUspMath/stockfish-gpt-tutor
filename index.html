@@ -14,7 +14,7 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
 
     <!-- Header -->
-    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 max-w-7xl w-full mx-auto">
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 max-w-7xl w-full mx-auto">
         <div class="flex items-center gap-3">
             <i class="fa-solid fa-graduation-cap text-emerald-400 text-2xl"></i>
             <div>
@@ -25,12 +25,17 @@
             </div>
         </div>
         <!-- Configuración de API Key -->
-        <div class="flex items-center gap-2 w-full sm:w-auto">
+        <div class="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
             <input type="password" id="apiKeyInput" placeholder="Pega tu Google Gemini API Key" 
                    class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 w-full sm:w-64">
-            <button onclick="saveApiKey()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
-                Guardar Key
-            </button>
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button onclick="saveApiKey()" class="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
+                    Guardar Key
+                </button>
+                <button onclick="scanAvailableModels()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
+                    <i class="fa-solid fa-radar text-xs mr-1"></i> Escanear Modelos
+                </button>
+            </div>
         </div>
     </header>
 
@@ -81,12 +86,18 @@
                 <!-- Estado del análisis -->
                 <div id="loading" class="hidden flex-1 flex-col items-center justify-center space-y-3">
                     <i class="fa-solid fa-spinner text-emerald-400 text-3xl animate-spin"></i>
-                    <p class="text-xs text-slate-400">Stockfish analizando y Gemini buscando un modelo activo para redactar...</p>
+                    <p class="text-xs text-slate-400">Analizando posición...</p>
+                </div>
+
+                <!-- Consola de Diagnóstico de Modelos -->
+                <div id="diagnosticsBox" class="hidden bg-slate-950 border border-slate-800 rounded-xl p-4 mb-4 text-xs font-mono">
+                    <p class="text-indigo-400 font-bold mb-2">📡 Resultado del Escaneo de tu Clave:</p>
+                    <div id="diagnosticsList" class="text-slate-300 space-y-1 max-h-32 overflow-y-auto"></div>
                 </div>
 
                 <div id="placeholderText" class="flex-1 flex flex-col items-center justify-center text-slate-500 text-center p-8">
                     <i class="fa-solid fa-chess-knight text-5xl mb-4 opacity-20"></i>
-                    <p class="text-xs">Navega por las jugadas. La IA buscará de forma inteligente el mejor modelo disponible para tu clave.</p>
+                    <p class="text-xs">Navega por las jugadas. Haz clic en "Escanear Modelos" arriba para verificar qué motores de IA tiene activos tu clave.</p>
                 </div>
 
                 <!-- Contenedor del Texto del Tutor -->
@@ -107,6 +118,7 @@
         let game = new Chess();
         let history = [];
         let currentIdx = -1;
+        let detectedModel = null; // Guardará el modelo que funcione para este usuario
 
         $(document).ready(function() {
             board = Chessboard('myBoard', {
@@ -118,6 +130,8 @@
             const savedKey = localStorage.getItem('gemini_key');
             if (savedKey) {
                 document.getElementById('apiKeyInput').value = savedKey;
+                // Escanear automáticamente si ya hay clave
+                scanAvailableModels();
             }
         });
 
@@ -126,6 +140,56 @@
             if(!key) return alert('Por favor ingresa una clave válida.');
             localStorage.setItem('gemini_key', key);
             alert('¡Google Gemini API Key guardada localmente!');
+            scanAvailableModels();
+        }
+
+        // FUNCIÓN CLAVE: Pregunta a Google qué modelos tiene permitidos tu clave exacta
+        async function scanAvailableModels() {
+            const apiKey = localStorage.getItem('gemini_key') || document.getElementById('apiKeyInput').value.trim();
+            if (!apiKey) return;
+
+            const diagBox = document.getElementById('diagnosticsBox');
+            const diagList = document.getElementById('diagnosticsList');
+            diagBox.classList.remove('hidden');
+            diagList.innerHTML = "⌛ Conectando con los servidores de Google...";
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok && data.models) {
+                    diagList.innerHTML = "";
+                    // Filtrar solo los modelos de generación de texto disponibles para esta clave
+                    const textModels = data.models
+                        .filter(m => m.supportedGenerationMethods.includes('generateContent'))
+                        .map(m => m.name.replace('models/', ''));
+
+                    if (textModels.length > 0) {
+                        textModels.forEach(model => {
+                            diagList.innerHTML += `<div class="text-emerald-400"><i class="fa-solid fa-check mr-1"></i> ${model} (Disponible)</div>`;
+                        });
+                        // Seleccionar el mejor modelo disponible de forma inteligente
+                        if (textModels.includes('gemini-1.5-flash')) {
+                            detectedModel = 'gemini-1.5-flash';
+                        } else if (textModels.includes('gemini-1.5-flash-latest')) {
+                            detectedModel = 'gemini-1.5-flash-latest';
+                        } else if (textModels.includes('gemini-pro')) {
+                            detectedModel = 'gemini-pro';
+                        } else {
+                            detectedModel = textModels[0];
+                        }
+                        diagList.innerHTML += `<div class="text-indigo-300 mt-2 font-bold"><i class="fa-solid fa-gears mr-1"></i> Modelo auto-configurado: ${detectedModel}</div>`;
+                    } else {
+                        diagList.innerHTML = `<div class="text-amber-400">⚠️ No se encontraron modelos de texto activos para esta clave.</div>`;
+                    }
+                } else {
+                    let errMsg = data.error ? data.error.message : "Error desconocido.";
+                    diagList.innerHTML = `<div class="text-rose-400">❌ Error de Google: ${errMsg}<br><br>💡 Solución sugerida: Tu clave no tiene activado el servicio de IA. Sigue el Paso 2 de las instrucciones de Lyneitor para solucionarlo.</div>`;
+                }
+            } catch (err) {
+                diagList.innerHTML = `<div class="text-rose-400">❌ Error de red al escanear: ${err.message}</div>`;
+            }
         }
 
         function loadPgn() {
@@ -165,7 +229,6 @@
             }
         }
 
-        // Sistema de consulta con Auto-Recuperación de Modelos
         async function analyzePosition(fen, lastMove) {
             const apiKey = localStorage.getItem('gemini_key');
             if (!apiKey) {
@@ -176,12 +239,20 @@
                 return;
             }
 
+            if (!detectedModel) {
+                document.getElementById('placeholderText').innerHTML = `
+                    <i class="fa-solid fa-triangle-exclamation text-rose-500 text-3xl mb-2"></i>
+                    <p class="text-xs text-rose-400">No se ha detectado ningún modelo compatible para tu clave. Haz clic en "Escanear Modelos" arriba.</p>
+                `;
+                return;
+            }
+
             document.getElementById('placeholderText').classList.add('hidden');
             document.getElementById('tutorResponse').classList.add('hidden');
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                // 1. Obtener datos de Stockfish
+                // 1. Obtener datos de Stockfish de Lichess
                 const lichessUrl = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}`;
                 const response = await fetch(lichessUrl);
                 let stockfishData = "No disponible en la nube de Lichess";
@@ -197,61 +268,37 @@
                     stockfishData = "Stockfish no tiene esta posición precalculada en Lichess.";
                 }
 
-                // Prompt de Ajedrez
+                // 2. Prompt de Ajedrez
                 const prompt = `Eres un tutor de ajedrez muy didáctico. Explica el movimiento jugado: "${lastMove}". 
                 La posición actual en FEN es: "${fen}".
                 La evaluación de Stockfish es: "${stockfishData}".
                 Explica por qué ese movimiento es bueno o malo, qué planes abre y qué conceptos enseña. Sé breve e instructivo (máximo 2 párrafos).`;
 
-                // Lista de modelos ordenados por prioridad (del más nuevo al más compatible)
-                const models = [
-                    "gemini-1.5-flash-latest",
-                    "gemini-1.5-pro-latest",
-                    "gemini-1.5-flash",
-                    "gemini-pro" // El modelo clásico y más compatible a nivel global
-                ];
+                // 3. Consulta al modelo auto-detectado
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${detectedModel}:generateContent?key=${apiKey}`;
+                
+                const geminiResponse = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
 
-                let success = false;
-                let lastError = "";
+                const geminiData = await geminiResponse.json();
 
-                // Bucle inteligente: Probará cada modelo hasta que uno responda con éxito
-                for (let modelName of models) {
-                    try {
-                        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-                        
-                        const geminiResponse = await fetch(geminiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: prompt }] }]
-                            })
-                        });
-
-                        const geminiData = await geminiResponse.json();
-
-                        if (geminiResponse.ok && geminiData.candidates && geminiData.candidates[0].content) {
-                            const explanation = geminiData.candidates[0].content.parts[0].text;
-                            document.getElementById('tutorResponse').innerText = `[Analizado con ${modelName}]\n\n${explanation}`;
-                            document.getElementById('tutorResponse').classList.remove('hidden');
-                            success = true;
-                            break; // Romper el ciclo ya que funcionó
-                        } else if (geminiData.error) {
-                            lastError = `Modelo ${modelName} falló: ${geminiData.error.message}`;
-                            console.warn(lastError);
-                        }
-                    } catch (err) {
-                        lastError = err.message;
-                        console.warn(`Error de red con el modelo ${modelName}`);
-                    }
-                }
-
-                if (!success) {
-                    throw new Error(`Ningún modelo de Google respondió. Último error registrado:\n${lastError}`);
+                if (geminiResponse.ok && geminiData.candidates && geminiData.candidates[0].content) {
+                    const explanation = geminiData.candidates[0].content.parts[0].text;
+                    document.getElementById('tutorResponse').innerText = explanation;
+                    document.getElementById('tutorResponse').classList.remove('hidden');
+                } else {
+                    let errMsg = geminiData.error ? geminiData.error.message : "Error desconocido.";
+                    throw new Error(errMsg);
                 }
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('tutorResponse').innerText = error.message || "Error al conectar con Gemini.";
+                document.getElementById('tutorResponse').innerText = `Error: ${error.message}`;
                 document.getElementById('tutorResponse').classList.remove('hidden');
             } finally {
                 document.getElementById('loading').classList.add('hidden');
