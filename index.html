@@ -198,13 +198,13 @@
                     stockfishData = "Stockfish no tiene esta posición precalculada en Lichess. Analiza usando principios generales.";
                 }
 
-                // 2. Enviar datos a Google Gemini 1.5 Flash (Soporta llamadas directas del navegador sin CORS)
+                // 2. Enviar datos a Google Gemini usando la API v1 estable
                 const prompt = `Eres un tutor de ajedrez muy didáctico y ameno. Explica el movimiento jugado: "${lastMove}". 
                 La posición actual en FEN es: "${fen}".
                 La evaluación de Stockfish es: "${stockfishData}".
                 Explica por qué ese movimiento es bueno o malo, qué planes abre para ambos bandos y qué conceptos estratégicos enseña esta posición. Sé breve e instructivo (máximo 2-3 párrafos).`;
 
-                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
                 const geminiResponse = await fetch(geminiUrl, {
                     method: 'POST',
@@ -220,18 +220,26 @@
 
                 const geminiData = await geminiResponse.json();
                 
-                if (geminiData.candidates && geminiData.candidates[0].content.parts[0].text) {
+                // DIAGNÓSTICO DE ERRORES DEL SERVIDOR DE GOOGLE
+                if (geminiData.error) {
+                    let errorMsg = `Error de Google Gemini (${geminiData.error.status || 'Código Desconocido'}):\n${geminiData.error.message}`;
+                    if (geminiData.error.message.includes("API key not valid")) {
+                        errorMsg += "\n\n-> Solución: Tu API Key no es válida. Ve a Google AI Studio y genera una nueva clave limpia.";
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                if (geminiData.candidates && geminiData.candidates[0].content && geminiData.candidates[0].content.parts[0]) {
                     const explanation = geminiData.candidates[0].content.parts[0].text;
                     document.getElementById('tutorResponse').innerText = explanation;
                     document.getElementById('tutorResponse').classList.remove('hidden');
                 } else {
-                    document.getElementById('tutorResponse').innerText = "Error en la respuesta de Gemini. Asegúrate de que tu API Key sea correcta.";
-                    document.getElementById('tutorResponse').classList.remove('hidden');
+                    throw new Error("Google devolvió una respuesta vacía o con formato inesperado.");
                 }
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('tutorResponse').innerText = "Error de conexión con Gemini. Verifica tu clave de API.";
+                document.getElementById('tutorResponse').innerText = error.message || "Error al conectar con Gemini.";
                 document.getElementById('tutorResponse').classList.remove('hidden');
             } finally {
                 document.getElementById('loading').classList.add('hidden');
