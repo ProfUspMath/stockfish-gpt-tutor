@@ -1,1 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stockfish Groq Chess Tutor</title>
+    <!-- Tailwind CSS para diseño elegante -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chessboard.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 max-w-7xl w-full mx-auto">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-graduation-cap text-emerald-400 text-2xl"></i>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                    Stockfish Groq Tutor
+                </h1>
+                <p class="text-xs text-slate-400">Análisis didáctico gratuito con Llama 3 y Stockfish</p>
+            </div>
+        </div>
+        <!-- Configuración de API Key de Groq -->
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+            <input type="password" id="apiKeyInput" placeholder="Pega tu Groq API Key (gsk_...)" 
+                   class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 w-full sm:w-64">
+            <button onclick="saveApiKey()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
+                Guardar Key
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 p-6 lg:p-12">
+        
+        <!-- Panel Izquierdo: Entrada de PGN y Tablero -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-base font-semibold mb-3 flex items-center gap-2 text-slate-200">
+                    <i class="fa-solid fa-file-import text-emerald-400"></i> Cargar Partida (PGN)
+                </h2>
+                <textarea id="pgnInput" placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5..." 
+                          class="w-full h-24 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 font-mono focus:outline-none focus:border-emerald-500 resize-none mb-3"></textarea>
+                <button onclick="loadPgn()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Cargar y Sincronizar Tablero
+                </button>
+            </div>
+
+            <!-- Tablero de Ajedrez -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center">
+                <div id="myBoard" class="w-full max-w-[340px] rounded-lg overflow-hidden shadow-2xl border-4 border-slate-800"></div>
+                
+                <!-- Controles de Navegación -->
+                <div class="flex justify-center gap-4 mt-4 w-full">
+                    <button onclick="prevMove()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold transition-colors">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+                    <button onclick="nextMove()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold transition-colors">
+                        Siguiente <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Tutor de IA y Stockfish -->
+        <div class="lg:col-span-7">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 shadow-xl h-full flex flex-col min-h-[450px]">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-200">
+                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i> Explicación del Tutor (Llama 3)
+                    </h2>
+                    <div id="evalBadge" class="bg-slate-950 text-emerald-400 px-3 py-1 rounded-full text-xs font-mono border border-slate-800">
+                        Eval: Estático
+                    </div>
+                </div>
+
+                <!-- Estado del análisis -->
+                <div id="loading" class="hidden flex-1 flex-col items-center justify-center space-y-3">
+                    <i class="fa-solid fa-spinner text-emerald-400 text-3xl animate-spin"></i>
+                    <p class="text-xs text-slate-400">Stockfish analizando y Groq redactando tu tutoría ultra rápida...</p>
+                </div>
+
+                <div id="placeholderText" class="flex-1 flex flex-col items-center justify-center text-slate-500 text-center p-8">
+                    <i class="fa-solid fa-chess-knight text-5xl mb-4 opacity-20"></i>
+                    <p class="text-xs">Navega por las jugadas en el tablero. El tutor de Groq te explicará las ideas de Stockfish al instante.</p>
+                </div>
+
+                <!-- Contenedor del Texto del Tutor -->
+                <div id="tutorResponse" class="hidden flex-1 overflow-y-auto text-slate-300 text-sm leading-relaxed font-serif whitespace-pre-line max-h-[400px]">
+                    <!-- Aquí se inyecta la respuesta -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts necesarios -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+    <script>
+        let board = null;
+        let game = new Chess();
+        let history = [];
+        let currentIdx = -1;
+
+        $(document).ready(function() {
+            board = Chessboard('myBoard', {
+                position: 'start',
+                draggable: false,
+                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+            });
+            
+            // Cargar API Key de Groq si ya está guardada
+            const savedKey = localStorage.getItem('groq_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+            }
+        });
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value;
+            if(!key.startsWith('gsk_')) {
+                alert('Atención: Las claves de Groq suelen empezar por "gsk_". Por favor verifícala.');
+            }
+            localStorage.setItem('groq_key', key);
+            alert('¡Groq API Key guardada localmente en tu navegador!');
+        }
+
+        function loadPgn() {
+            const pgn = document.getElementById('pgnInput').value;
+            if (!pgn) return alert('Por favor, introduce un PGN válido.');
+
+            game = new Chess();
+            if (!game.load_pgn(pgn)) {
+                return alert('Error al leer el PGN. Verifica el formato.');
+            }
+
+            history = game.history({ verbose: true });
+            currentIdx = history.length - 1;
+            updateBoardToCurrent();
+        }
+
+        function updateBoardToCurrent() {
+            const tempGame = new Chess();
+            for (let i = 0; i <= currentIdx; i++) {
+                tempGame.move(history[i]);
+            }
+            board.position(tempGame.fen());
+            analyzePosition(tempGame.fen(), history[currentIdx] ? history[currentIdx].san : 'Posición Inicial');
+        }
+
+        function prevMove() {
+            if (currentIdx > -1) {
+                currentIdx--;
+                updateBoardToCurrent();
+            }
+        }
+
+        function nextMove() {
+            if (currentIdx < history.length - 1) {
+                currentIdx++;
+                updateBoardToCurrent();
+            }
+        }
+
+        // Conexión con Stockfish en la nube + GROQ API (Llama 3)
+        async function analyzePosition(fen, lastMove) {
+            const apiKey = localStorage.getItem('groq_key');
+            if (!apiKey) {
+                document.getElementById('placeholderText').innerHTML = `
+                    <i class="fa-solid fa-key text-amber-500 text-3xl mb-2"></i>
+                    <p class="text-xs text-amber-400">Por favor, guarda tu Groq API Key arriba para recibir el análisis del tutor.</p>
+                `;
+                return;
+            }
+
+            document.getElementById('placeholderText').classList.add('hidden');
+            document.getElementById('tutorResponse').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+
+            try {
+                // 1. Consultar Stockfish vía Lichess Cloud Eval
+                const lichessUrl = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}`;
+                const response = await fetch(lichessUrl);
+                let stockfishData = "No disponible en la nube de Lichess";
+                let evaluation = "0.0";
+
+                if (response.ok) {
+                    const data = await response.json();
+                    evaluation = data.pvs && data.pvs[0] ? (data.pvs[0].cp / 100).toFixed(2) : "Mate o ventaja decisiva";
+                    stockfishData = `Evaluación numérica: ${evaluation}. Mejores jugadas de Stockfish: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
+                    document.getElementById('evalBadge').innerText = `Eval Stockfish: ${evaluation}`;
+                } else {
+                    document.getElementById('evalBadge').innerText = `Eval: Local`;
+                    stockfishData = "Stockfish no tiene esta posición precalculada en Lichess. Analiza usando principios generales.";
+                }
+
+                // 2. Enviar datos a Groq (Llama 3)
+                const prompt = `Eres un tutor de ajedrez muy didáctico y ameno. Explica el movimiento jugado: "${lastMove}". 
+                La posición actual en FEN es: "${fen}".
+                La evaluación de Stockfish es: "${stockfishData}".
+                Explica por qué ese movimiento es bueno o malo, qué planes abre para ambos bandos y qué conceptos estratégicos enseña esta posición. Sé breve e instructivo (máximo 2-3 párrafos).`;
+
+                const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: "llama3-8b-8192", // Modelo ultra rápido y gratuito de Groq
+                        messages: [{ role: "user", content: prompt }],
+                        temperature: 0.3
+                    })
+                });
+
+                const groqData = await groqResponse.json();
+                if (groqData.choices && groqData.choices[0]) {
+                    const explanation = groqData.choices[0].message.content;
+                    document.getElementById('tutorResponse').innerText = explanation;
+                    document.getElementById('tutorResponse').classList.remove('hidden');
+                } else {
+                    document.getElementById('tutorResponse').innerText = "Error al conectar con Groq. Asegúrate de haber guardado una clave válida.";
+                    document.getElementById('tutorResponse').classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('tutorResponse').innerText = "Error al procesar la evaluación.";
+                document.getElementById('tutorResponse').classList.remove('hidden');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
 
