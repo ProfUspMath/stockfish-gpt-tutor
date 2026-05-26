@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stockfish Groq Chess Tutor</title>
+    <title>Stockfish Gemini Chess Tutor</title>
     <!-- Tailwind CSS para diseño elegante -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chessboard.js CSS -->
@@ -19,14 +19,14 @@
             <i class="fa-solid fa-graduation-cap text-emerald-400 text-2xl"></i>
             <div>
                 <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
-                    Stockfish Groq Tutor
+                    Stockfish Gemini Tutor
                 </h1>
-                <p class="text-xs text-slate-400">Análisis didáctico gratuito con Llama 3 y Stockfish</p>
+                <p class="text-xs text-slate-400">Análisis didáctico gratuito con Google Gemini 1.5 y Stockfish</p>
             </div>
         </div>
-        <!-- Configuración de API Key de Groq -->
+        <!-- Configuración de API Key de Google Gemini -->
         <div class="flex items-center gap-2 w-full sm:w-auto">
-            <input type="password" id="apiKeyInput" placeholder="Pega tu Groq API Key (gsk_...)" 
+            <input type="password" id="apiKeyInput" placeholder="Pega tu Google Gemini API Key" 
                    class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 w-full sm:w-64">
             <button onclick="saveApiKey()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
                 Guardar Key
@@ -71,7 +71,7 @@
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 shadow-xl h-full flex flex-col min-h-[450px]">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
                     <h2 class="text-lg font-bold flex items-center gap-2 text-slate-200">
-                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i> Explicación del Tutor (Llama 3)
+                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i> Explicación del Tutor (Gemini)
                     </h2>
                     <div id="evalBadge" class="bg-slate-950 text-emerald-400 px-3 py-1 rounded-full text-xs font-mono border border-slate-800">
                         Eval: Estático
@@ -81,12 +81,12 @@
                 <!-- Estado del análisis -->
                 <div id="loading" class="hidden flex-1 flex-col items-center justify-center space-y-3">
                     <i class="fa-solid fa-spinner text-emerald-400 text-3xl animate-spin"></i>
-                    <p class="text-xs text-slate-400">Stockfish analizando y Groq redactando tu tutoría ultra rápida...</p>
+                    <p class="text-xs text-slate-400">Stockfish analizando y Gemini redactando tu tutoría gratis...</p>
                 </div>
 
                 <div id="placeholderText" class="flex-1 flex flex-col items-center justify-center text-slate-500 text-center p-8">
                     <i class="fa-solid fa-chess-knight text-5xl mb-4 opacity-20"></i>
-                    <p class="text-xs">Navega por las jugadas en el tablero. El tutor de Groq te explicará las ideas de Stockfish al instante.</p>
+                    <p class="text-xs">Navega por las jugadas en el tablero. El tutor de Gemini te explicará las ideas de Stockfish al instante.</p>
                 </div>
 
                 <!-- Contenedor del Texto del Tutor -->
@@ -115,20 +115,18 @@
                 pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
             });
             
-            // Cargar API Key de Groq si ya está guardada
-            const savedKey = localStorage.getItem('groq_key');
+            // Cargar API Key de Gemini si ya está guardada
+            const savedKey = localStorage.getItem('gemini_key');
             if (savedKey) {
                 document.getElementById('apiKeyInput').value = savedKey;
             }
         });
 
         function saveApiKey() {
-            const key = document.getElementById('apiKeyInput').value;
-            if(!key.startsWith('gsk_')) {
-                alert('Atención: Las claves de Groq suelen empezar por "gsk_". Por favor verifícala.');
-            }
-            localStorage.setItem('groq_key', key);
-            alert('¡Groq API Key guardada localmente en tu navegador!');
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if(!key) return alert('Por favor ingresa una clave válida.');
+            localStorage.setItem('gemini_key', key);
+            alert('¡Google Gemini API Key guardada localmente en tu navegador!');
         }
 
         function loadPgn() {
@@ -168,13 +166,13 @@
             }
         }
 
-        // Conexión con Stockfish en la nube + GROQ API (Llama 3)
+        // Conexión con Stockfish + GOOGLE GEMINI API
         async function analyzePosition(fen, lastMove) {
-            const apiKey = localStorage.getItem('groq_key');
+            const apiKey = localStorage.getItem('gemini_key');
             if (!apiKey) {
                 document.getElementById('placeholderText').innerHTML = `
                     <i class="fa-solid fa-key text-amber-500 text-3xl mb-2"></i>
-                    <p class="text-xs text-amber-400">Por favor, guarda tu Groq API Key arriba para recibir el análisis del tutor.</p>
+                    <p class="text-xs text-amber-400">Por favor, guarda tu Google Gemini API Key arriba para recibir el análisis del tutor.</p>
                 `;
                 return;
             }
@@ -193,45 +191,47 @@
                 if (response.ok) {
                     const data = await response.json();
                     evaluation = data.pvs && data.pvs[0] ? (data.pvs[0].cp / 100).toFixed(2) : "Mate o ventaja decisiva";
-                    stockfishData = `Evaluación numérica: ${evaluation}. Mejores jugadas de Stockfish: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
+                    stockfishData = `Evaluación numérica: ${evaluation}. Mejores jugadas sugeridas por Stockfish: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
                     document.getElementById('evalBadge').innerText = `Eval Stockfish: ${evaluation}`;
                 } else {
                     document.getElementById('evalBadge').innerText = `Eval: Local`;
                     stockfishData = "Stockfish no tiene esta posición precalculada en Lichess. Analiza usando principios generales.";
                 }
 
-                // 2. Enviar datos a Groq (Llama 3)
+                // 2. Enviar datos a Google Gemini 1.5 Flash (Soporta llamadas directas del navegador sin CORS)
                 const prompt = `Eres un tutor de ajedrez muy didáctico y ameno. Explica el movimiento jugado: "${lastMove}". 
                 La posición actual en FEN es: "${fen}".
                 La evaluación de Stockfish es: "${stockfishData}".
                 Explica por qué ese movimiento es bueno o malo, qué planes abre para ambos bandos y qué conceptos estratégicos enseña esta posición. Sé breve e instructivo (máximo 2-3 párrafos).`;
 
-                const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+                const geminiResponse = await fetch(geminiUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: "llama3-8b-8192", // Modelo ultra rápido y gratuito de Groq
-                        messages: [{ role: "user", content: prompt }],
-                        temperature: 0.3
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
                     })
                 });
 
-                const groqData = await groqResponse.json();
-                if (groqData.choices && groqData.choices[0]) {
-                    const explanation = groqData.choices[0].message.content;
+                const geminiData = await geminiResponse.json();
+                
+                if (geminiData.candidates && geminiData.candidates[0].content.parts[0].text) {
+                    const explanation = geminiData.candidates[0].content.parts[0].text;
                     document.getElementById('tutorResponse').innerText = explanation;
                     document.getElementById('tutorResponse').classList.remove('hidden');
                 } else {
-                    document.getElementById('tutorResponse').innerText = "Error al conectar con Groq. Asegúrate de haber guardado una clave válida.";
+                    document.getElementById('tutorResponse').innerText = "Error en la respuesta de Gemini. Asegúrate de que tu API Key sea correcta.";
                     document.getElementById('tutorResponse').classList.remove('hidden');
                 }
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('tutorResponse').innerText = "Error al procesar la evaluación.";
+                document.getElementById('tutorResponse').innerText = "Error de conexión con Gemini. Verifica tu clave de API.";
                 document.getElementById('tutorResponse').classList.remove('hidden');
             } finally {
                 document.getElementById('loading').classList.add('hidden');
@@ -240,4 +240,3 @@
     </script>
 </body>
 </html>
-
