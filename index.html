@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stockfish Gemini Chess Tutor</title>
-    <!-- Tailwind CSS para diseño elegante -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chessboard.js CSS -->
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
@@ -21,10 +21,10 @@
                 <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
                     Stockfish Gemini Tutor
                 </h1>
-                <p class="text-xs text-slate-400">Análisis didáctico gratuito con Google Gemini 1.5 y Stockfish</p>
+                <p class="text-xs text-slate-400">Análisis didáctico gratuito con Google Gemini y Stockfish</p>
             </div>
         </div>
-        <!-- Configuración de API Key de Google Gemini -->
+        <!-- Configuración de API Key -->
         <div class="flex items-center gap-2 w-full sm:w-auto">
             <input type="password" id="apiKeyInput" placeholder="Pega tu Google Gemini API Key" 
                    class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 w-full sm:w-64">
@@ -37,7 +37,7 @@
     <!-- Contenido Principal -->
     <main class="flex-1 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 p-6 lg:p-12">
         
-        <!-- Panel Izquierdo: Entrada de PGN y Tablero -->
+        <!-- Panel Izquierdo -->
         <div class="lg:col-span-5 space-y-6">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-base font-semibold mb-3 flex items-center gap-2 text-slate-200">
@@ -50,11 +50,11 @@
                 </button>
             </div>
 
-            <!-- Tablero de Ajedrez -->
+            <!-- Tablero -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center">
                 <div id="myBoard" class="w-full max-w-[340px] rounded-lg overflow-hidden shadow-2xl border-4 border-slate-800"></div>
                 
-                <!-- Controles de Navegación -->
+                <!-- Controles -->
                 <div class="flex justify-center gap-4 mt-4 w-full">
                     <button onclick="prevMove()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold transition-colors">
                         <i class="fa-solid fa-chevron-left"></i> Anterior
@@ -66,7 +66,7 @@
             </div>
         </div>
 
-        <!-- Panel Derecho: Tutor de IA y Stockfish -->
+        <!-- Panel Derecho -->
         <div class="lg:col-span-7">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 shadow-xl h-full flex flex-col min-h-[450px]">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
@@ -81,12 +81,12 @@
                 <!-- Estado del análisis -->
                 <div id="loading" class="hidden flex-1 flex-col items-center justify-center space-y-3">
                     <i class="fa-solid fa-spinner text-emerald-400 text-3xl animate-spin"></i>
-                    <p class="text-xs text-slate-400">Stockfish analizando y Gemini redactando tu tutoría gratis...</p>
+                    <p class="text-xs text-slate-400">Stockfish analizando y Gemini buscando un modelo activo para redactar...</p>
                 </div>
 
                 <div id="placeholderText" class="flex-1 flex flex-col items-center justify-center text-slate-500 text-center p-8">
                     <i class="fa-solid fa-chess-knight text-5xl mb-4 opacity-20"></i>
-                    <p class="text-xs">Navega por las jugadas en el tablero. El tutor de Gemini te explicará las ideas de Stockfish al instante.</p>
+                    <p class="text-xs">Navega por las jugadas. La IA buscará de forma inteligente el mejor modelo disponible para tu clave.</p>
                 </div>
 
                 <!-- Contenedor del Texto del Tutor -->
@@ -97,7 +97,7 @@
         </div>
     </main>
 
-    <!-- Scripts necesarios -->
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
@@ -115,7 +115,6 @@
                 pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
             });
             
-            // Cargar API Key de Gemini si ya está guardada
             const savedKey = localStorage.getItem('gemini_key');
             if (savedKey) {
                 document.getElementById('apiKeyInput').value = savedKey;
@@ -126,7 +125,7 @@
             const key = document.getElementById('apiKeyInput').value.trim();
             if(!key) return alert('Por favor ingresa una clave válida.');
             localStorage.setItem('gemini_key', key);
-            alert('¡Google Gemini API Key guardada localmente en tu navegador!');
+            alert('¡Google Gemini API Key guardada localmente!');
         }
 
         function loadPgn() {
@@ -166,13 +165,13 @@
             }
         }
 
-        // Conexión con Stockfish + GOOGLE GEMINI API
+        // Sistema de consulta con Auto-Recuperación de Modelos
         async function analyzePosition(fen, lastMove) {
             const apiKey = localStorage.getItem('gemini_key');
             if (!apiKey) {
                 document.getElementById('placeholderText').innerHTML = `
                     <i class="fa-solid fa-key text-amber-500 text-3xl mb-2"></i>
-                    <p class="text-xs text-amber-400">Por favor, guarda tu Google Gemini API Key arriba para recibir el análisis del tutor.</p>
+                    <p class="text-xs text-amber-400">Guarda tu Google Gemini API Key arriba para recibir el análisis.</p>
                 `;
                 return;
             }
@@ -182,7 +181,7 @@
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                // 1. Consultar Stockfish vía Lichess Cloud Eval
+                // 1. Obtener datos de Stockfish
                 const lichessUrl = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}`;
                 const response = await fetch(lichessUrl);
                 let stockfishData = "No disponible en la nube de Lichess";
@@ -191,50 +190,63 @@
                 if (response.ok) {
                     const data = await response.json();
                     evaluation = data.pvs && data.pvs[0] ? (data.pvs[0].cp / 100).toFixed(2) : "Mate o ventaja decisiva";
-                    stockfishData = `Evaluación numérica: ${evaluation}. Mejores jugadas sugeridas por Stockfish: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
+                    stockfishData = `Evaluación: ${evaluation}. Mejores jugadas: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
                     document.getElementById('evalBadge').innerText = `Eval Stockfish: ${evaluation}`;
                 } else {
                     document.getElementById('evalBadge').innerText = `Eval: Local`;
-                    stockfishData = "Stockfish no tiene esta posición precalculada en Lichess. Analiza usando principios generales.";
+                    stockfishData = "Stockfish no tiene esta posición precalculada en Lichess.";
                 }
 
-                // 2. Enviar datos a Google Gemini usando la API v1beta (Correcto para Gemini 1.5 Flash)
-                const prompt = `Eres un tutor de ajedrez muy didáctico y ameno. Explica el movimiento jugado: "${lastMove}". 
+                // Prompt de Ajedrez
+                const prompt = `Eres un tutor de ajedrez muy didáctico. Explica el movimiento jugado: "${lastMove}". 
                 La posición actual en FEN es: "${fen}".
                 La evaluación de Stockfish es: "${stockfishData}".
-                Explica por qué ese movimiento es bueno o malo, qué planes abre para ambos bandos y qué conceptos estratégicos enseña esta posición. Sé breve e instructivo (máximo 2-3 párrafos).`;
+                Explica por qué ese movimiento es bueno o malo, qué planes abre y qué conceptos enseña. Sé breve e instructivo (máximo 2 párrafos).`;
 
-                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                // Lista de modelos ordenados por prioridad (del más nuevo al más compatible)
+                const models = [
+                    "gemini-1.5-flash-latest",
+                    "gemini-1.5-pro-latest",
+                    "gemini-1.5-flash",
+                    "gemini-pro" // El modelo clásico y más compatible a nivel global
+                ];
 
-                const geminiResponse = await fetch(geminiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: prompt }]
-                        }]
-                    })
-                });
+                let success = false;
+                let lastError = "";
 
-                const geminiData = await geminiResponse.json();
-                
-                // DIAGNÓSTICO DE ERRORES DEL SERVIDOR DE GOOGLE
-                if (geminiData.error) {
-                    let errorMsg = `Error de Google Gemini (${geminiData.error.status || 'Código Desconocido'}):\n${geminiData.error.message}`;
-                    if (geminiData.error.message.includes("API key not valid")) {
-                        errorMsg += "\n\n-> Solución: Tu API Key no es válida. Ve a Google AI Studio y genera una nueva clave limpia.";
+                // Bucle inteligente: Probará cada modelo hasta que uno responda con éxito
+                for (let modelName of models) {
+                    try {
+                        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                        
+                        const geminiResponse = await fetch(geminiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }]
+                            })
+                        });
+
+                        const geminiData = await geminiResponse.json();
+
+                        if (geminiResponse.ok && geminiData.candidates && geminiData.candidates[0].content) {
+                            const explanation = geminiData.candidates[0].content.parts[0].text;
+                            document.getElementById('tutorResponse').innerText = `[Analizado con ${modelName}]\n\n${explanation}`;
+                            document.getElementById('tutorResponse').classList.remove('hidden');
+                            success = true;
+                            break; // Romper el ciclo ya que funcionó
+                        } else if (geminiData.error) {
+                            lastError = `Modelo ${modelName} falló: ${geminiData.error.message}`;
+                            console.warn(lastError);
+                        }
+                    } catch (err) {
+                        lastError = err.message;
+                        console.warn(`Error de red con el modelo ${modelName}`);
                     }
-                    throw new Error(errorMsg);
                 }
 
-                if (geminiData.candidates && geminiData.candidates[0].content && geminiData.candidates[0].content.parts[0]) {
-                    const explanation = geminiData.candidates[0].content.parts[0].text;
-                    document.getElementById('tutorResponse').innerText = explanation;
-                    document.getElementById('tutorResponse').classList.remove('hidden');
-                } else {
-                    throw new Error("Google devolvió una respuesta vacía o con formato inesperado.");
+                if (!success) {
+                    throw new Error(`Ningún modelo de Google respondió. Último error registrado:\n${lastError}`);
                 }
 
             } catch (error) {
