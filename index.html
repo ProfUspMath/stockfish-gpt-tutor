@@ -4,16 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutor de Ajedrez Inteligente Pro</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chessboard.js CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
-    <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Estilos editoriales para simular un libro de ajedrez dentro del contenedor */
+        .prose-book h3 { font-size: 1.25rem; font-weight: 700; color: #34d399; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .prose-book p { margin-bottom: 1rem; line-height: 1.7; text-align: justify; }
+        .prose-book strong { color: #f8fafc; font-weight: 700; }
+        .prose-book ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
+        .prose-book li { margin-bottom: 0.25rem; }
+        .prose-book blockquote { border-left: 4px solid #10b981; padding-left: 1rem; italic; color: #94a3b8; background: #020617; padding-top: 0.5rem; padding-bottom: 0.5rem; border-radius: 0 0.5rem 0.5rem 0; margin-bottom: 1rem; }
+    </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
 
-    <!-- Header -->
     <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 max-w-7xl w-full mx-auto">
         <div class="flex items-center gap-3">
             <i class="fa-solid fa-book-open text-emerald-400 text-2xl"></i>
@@ -25,7 +31,6 @@
             </div>
         </div>
         
-        <!-- Configuración de Proveedor y API Key -->
         <div class="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
             <select id="providerSelect" onchange="handleProviderChange()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-full sm:w-40 cursor-pointer font-semibold">
                 <option value="groq">Groq (Llama 3.1 Gratis)</option>
@@ -40,12 +45,9 @@
         </div>
     </header>
 
-    <!-- Contenido Principal -->
     <main class="flex-1 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 p-6 lg:p-12">
         
-        <!-- Panel Izquierdo -->
         <div class="lg:col-span-5 space-y-6">
-            <!-- Cargador de PGN -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-base font-semibold mb-3 flex items-center gap-2 text-slate-200">
                     <i class="fa-solid fa-file-import text-emerald-400"></i> Cargar Partida (PGN)
@@ -63,11 +65,9 @@
                 </div>
             </div>
 
-            <!-- Tablero y Navegación -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center">
                 <div id="myBoard" class="w-full max-w-[340px] rounded-lg overflow-hidden shadow-2xl border-4 border-slate-800"></div>
                 
-                <!-- Controles -->
                 <div class="flex justify-center gap-4 mt-4 w-full">
                     <button onclick="prevMove()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold transition-colors">
                         <i class="fa-solid fa-chevron-left"></i> Anterior
@@ -77,7 +77,6 @@
                     </button>
                 </div>
 
-                <!-- Lista de Jugadas Clickables -->
                 <div class="w-full mt-4 border-t border-slate-800 pt-4">
                     <p class="text-xs text-slate-400 mb-2 font-semibold"><i class="fa-solid fa-list-ol mr-1"></i> Lista de jugadas (Haz clic para saltar):</p>
                     <div id="moveList" class="flex flex-wrap gap-1 max-h-32 overflow-y-auto bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs">
@@ -87,33 +86,29 @@
             </div>
         </div>
 
-        <!-- Panel Derecho: Explicación del Tutor / Libro -->
         <div class="lg:col-span-7">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 shadow-xl h-full flex flex-col min-h-[500px]">
                 
-                <!-- SELECTOR DE MODELOS DINÁMICO -->
                 <div class="mb-4 bg-slate-950 border border-slate-800 rounded-xl p-4">
                     <label for="modelSelect" class="block text-xs font-semibold text-emerald-400 mb-2">
                         <i class="fa-solid fa-robot mr-1"></i> Modelo de Inteligencia Artificial Activo:
                     </label>
                     <select id="modelSelect" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer font-mono">
-                        <!-- Se llena dinámicamente -->
-                    </select>
+                        </select>
                 </div>
 
                 <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
                     <h2 class="text-lg font-bold flex items-center gap-2 text-slate-200">
-                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i> <span id="tutorTitle">Explicación del Tutor</span>
+                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i> <span id="tutorTitle">Crónica del Maestro</span>
                     </h2>
                     <div id="evalBadge" class="bg-slate-950 text-emerald-400 px-3 py-1 rounded-full text-xs font-mono border border-slate-800">
                         Eval: Estático
                     </div>
                 </div>
 
-                <!-- Estado del análisis -->
-                <div id="loading" class="hidden flex-1 flex-col items-center justify-center space-y-3">
+                <div id="loading" class="hidden flex-1 flex flex-col items-center justify-center space-y-3">
                     <i class="fa-solid fa-spinner text-emerald-400 text-3xl animate-spin"></i>
-                    <p id="loadingText" class="text-xs text-slate-400">Analizando...</p>
+                    <p id="loadingText" class="text-xs text-slate-400">Calculando variantes...</p>
                 </div>
 
                 <div id="placeholderText" class="flex-1 flex flex-col items-center justify-center text-slate-500 text-center p-8">
@@ -121,15 +116,12 @@
                     <p class="text-xs font-medium">Guarda tu API Key, selecciona tu modelo preferido y navega por la partida.</p>
                 </div>
 
-                <!-- Contenedor del Texto del Tutor -->
-                <div id="tutorResponse" class="hidden flex-1 overflow-y-auto text-slate-300 text-sm leading-relaxed font-serif whitespace-pre-line max-h-[500px]">
-                    <!-- Respuestas -->
-                </div>
+                <div id="tutorResponse" class="hidden flex-1 overflow-y-auto text-slate-300 text-sm prose-book font-serif max-h-[580px] pr-2">
+                    </div>
             </div>
         </div>
     </main>
 
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
@@ -182,14 +174,13 @@
 
             if (provider === 'groq') {
                 select.innerHTML = `
-                    <option value="llama-3.1-8b-instant" selected>Llama 3.1 8B (Lite - Ultra Rápido y Gratis)</option>
-                    <option value="llama3-8b-8192">Llama 3 8B (Estándar)</option>
-                    <option value="mixtral-8x7b-32768">Mixtral 8x7b (Avanzado)</option>
+                    <option value="llama-3.1-8b-instant" selected>Llama 3.1 8B (Lite - Ultra Rápido)</option>
+                    <option value="mixtral-8x7b-32768">Mixtral 8x7b (Alta precisión analítica)</option>
                 `;
             } else if (provider === 'openrouter') {
                 select.innerHTML = `
-                    <option value="meta-llama/llama-3.1-8b-instruct:free" selected>Llama 3.1 8B Free (Lite)</option>
-                    <option value="google/gemma-2-9b-it:free">Gemma 2 9B Free (Google Lite)</option>
+                    <option value="meta-llama/llama-3.1-8b-instruct:free" selected>Llama 3.1 8B Free</option>
+                    <option value="google/gemma-2-9b-it:free">Gemma 2 9B Free</option>
                 `;
             } else if (provider === 'gemini') {
                 if (!key) {
@@ -283,7 +274,7 @@
             }
         }
 
-        // PROMPT RIGUROSO ANTI-CHARLATANERÍA PASO A PASO
+        // PROMPT RIGUROSO ESTILO EDITORIAL DE LIBRO DE MAESTROS
         async function analyzePosition(fen, lastMove) {
             const provider = document.getElementById('providerSelect').value;
             const apiKey = localStorage.getItem(`key_${provider}`);
@@ -297,10 +288,10 @@
                 return;
             }
 
-            document.getElementById('tutorTitle').innerText = "Explicación del Tutor";
+            document.getElementById('tutorTitle').innerText = "Análisis del Gran Maestro";
             document.getElementById('placeholderText').classList.add('hidden');
             document.getElementById('tutorResponse').classList.add('hidden');
-            document.getElementById('loadingText').innerText = "La IA está analizando la jugada...";
+            document.getElementById('loadingText').innerText = "Profundizando en la posición...";
             document.getElementById('loading').classList.remove('hidden');
 
             try {
@@ -312,37 +303,40 @@
                 if (response.ok) {
                     const data = await response.json();
                     evaluation = data.pvs && data.pvs[0] ? (data.pvs[0].cp / 100).toFixed(2) : "Mate o ventaja decisiva";
-                    stockfishData = `Evaluación numérica de Stockfish: ${evaluation} (Los valores positivos benefician a las blancas, los negativos a las negras). Las mejores líneas calculadas por el motor son: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
+                    stockfishData = `Eval de Stockfish: ${evaluation}. Mejores líneas calculadas: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
                     document.getElementById('evalBadge').innerText = `Eval Stockfish: ${evaluation}`;
                 } else {
-                    document.getElementById('evalBadge').innerText = `Eval: Local`;
-                    stockfishData = "No hay datos exactos de evaluación en la nube para esta posición.";
+                    document.getElementById('evalBadge').innerText = `Eval: Dinámica`;
+                    stockfishData = "Posición compleja sin evaluación exacta en la nube.";
                 }
 
-                // PROMPT ULTRA-RIGUROSO DE AJEDREZ (CON TRADUCTOR DE PIEZAS)
-                const prompt = `Eres un riguroso Gran Maestro de Ajedrez y un analista técnico de élite. Tu objetivo es explicar la jugada realizada con absoluta precisión técnica, basándote estrictamente en los datos de Stockfish.
+                const prompt = `Actúe como un prestigioso Gran Maestro Internacional, autor de tratados de ajedrez hiper-rigurosos. Analiza la siguiente jugada con un tono serio, didáctico y elegante, evitando rodeos innecesarios o palabrería vacía de asistente virtual.
 
-                REGLAS DE TRADUCCIÓN DE PIEZAS (PGN INGLÉS A ESPAÑOL):
-                - K = Rey (King)
-                - Q = Dama / Reina (Queen)
-                - R = Torre (Rook)
-                - B = Alfil (Bishop) [¡OJO! 'B' NUNCA ES UN CABALLO, ES UN ALFIL]
-                - N = Caballo (Knight) [¡OJO! 'N' ES UN CABALLO]
-                - Si no hay letra (ej. d4, e5, c5), es un movimiento de Peón.
+REGLAS DE TRADUCCIÓN CRÍTICAS (PGN INGLÉS A ESPAÑOL):
+- K = Rey | Q = Dama | R = Torre | B = Alfil | N = Caballo.
+- Si no hay letra inicial (ej. e4, d5, c4), es un Peón.
 
-                DATOS DE LA POSICIÓN:
-                - Último movimiento jugado: "${lastMove}"
-                - Posición FEN actual: "${fen}"
-                - Datos de Stockfish: "${stockfishData}"
+DATOS TÉCNICOS:
+- Jugada ejecutada: "${lastMove}"
+- Configuración FEN: "${fen}"
+- Datos del motor: "${stockfishData}"
 
-                INSTRUCCIONES DE REDACCIÓN (Sigue esta estructura estrictamente, prohibido el relleno o inventar nombres de jugadas):
-                1. **Calificación Técnica:** Califica la jugada utilizando la evaluación de Stockfish (${evaluation}). Si la evaluación cayó drásticamente, decláralo un error o imprecisión. Explica qué pieza se movió usando los nombres correctos en español (¡no confundas Alfil con Caballo!).
-                2. **Análisis de la Posición:** Explica la estructura de peones, qué casillas se atacaron o defendieron con esta jugada, y qué planes tácticos reales abre para ambos bandos.
-                3. **Línea Recomendada por Stockfish:** Menciona explícitamente cuál era la jugada preferida de Stockfish para esta posición y qué puntuación le otorgaba.`;
+ESTRUCTURA EXIGIDA PARA EL LIBRO DE AJEDREZ (Responde usando Markdown estricto):
+
+### 1. El Veredicto Técnico (${lastMove})
+Determina con precisión el impacto de la jugada. Usa la anotación clásica si corresponde (¡!, !?, ?, ??). Explica qué pieza se ha desplazado en perfecto castellano y si cumple con los criterios de evaluación del motor (Stockfish: ${evaluation}).
+
+### 2. Anatomía de la Posición y Micro-Planes
+Analiza las consecuencias directas sobre el tablero:
+> ¿Qué debilidad posicional o casilla fuerte se acaba de crear? Explica el control del centro, la seguridad de los reyes y las tensiones en la estructura de peones de ambos bandos.
+
+### 3. La Variante Recomendada del Motor
+Muestra el camino óptimo alternativo o la continuación recomendada por el motor paso a paso de forma limpia. Escribe las jugadas en formato de notación algebraica española estándar (ej. 1...Cf6 2.c4 g6).`;
 
                 let explanation = await callAI(provider, selectedModel, apiKey, prompt);
 
-                document.getElementById('tutorResponse').innerText = explanation;
+                // Aquí ocurre la magia: Marcamos el markdown para convertirlo en HTML tipo libro
+                document.getElementById('tutorResponse').innerHTML = marked.parse(explanation);
                 document.getElementById('tutorResponse').classList.remove('hidden');
 
             } catch (error) {
@@ -354,7 +348,7 @@
             }
         }
 
-        // PROMPT RIGUROSO PARA LIBRO COMPLETO (SOPORTA TRADUCCIÓN Y EVITA ALUCINACIONES)
+        // PROMPT CORREGIDO PARA EL LIBRO DE LA PARTIDA COMPLETA
         async function generateFullBook() {
             const provider = document.getElementById('providerSelect').value;
             const apiKey = localStorage.getItem(`key_${provider}`);
@@ -364,36 +358,39 @@
             if (!pgn) return alert('Por favor, introduce un PGN válido para analizar la partida completa.');
             if (!apiKey) return alert('Por favor, guarda tu API Key arriba primero.');
 
-            document.getElementById('tutorTitle').innerText = "Capítulo del Libro Completo";
+            document.getElementById('tutorTitle').innerText = "Capítulo Editorial Completo";
             document.getElementById('placeholderText').classList.add('hidden');
             document.getElementById('tutorResponse').classList.add('hidden');
-            document.getElementById('loadingText').innerText = "Escribiendo un análisis de nivel de campeonato mundial...";
+            document.getElementById('loadingText').innerText = "Redactando obra maestra literaria...";
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                const prompt = `Actúa como un renombrado autor de libros de ajedrez y teórico de renombre mundial. Escribe un capítulo técnico y didáctico analizando la partida completa en formato PGN. 
+                const prompt = `Actúa como un ensayista y teórico de ajedrez histórico de nivel mundial. Escribe un capítulo técnico de un libro analizando rigurosamente la partida PGN provista. Evita saludos cordiales, introducciones de IA o comentarios superficiales.
 
-                REGLAS DE ORO TOTALMENTE OBLIGATORIAS:
-                1. **PROHIBIDO INVENTAR JUGADAS:** No menciones jugadas que no estén en el PGN provisto.
-                2. **TRADUCCIÓN CORRECTA DE PIEZAS:** Recuerda que en el PGN:
-                   - B = Alfil (Bishop). ¡B no es un caballo!
-                   - N = Caballo (Knight).
-                   - Q = Dama (Queen).
-                   - R = Torre (Rook).
-                   - K = Rey (King).
-                3. **SOPORTE TÉCNICO REAL:** Usa términos teóricos reales en español (flanco de rey, flanco de dama, iniciativa, peón aislado, debilidad de casillas). Prohibido inventar términos como "ala ciego" o "llave de rey".
+REGLAS DE ORO OBLIGATORIAS:
+1. TRADUCE LAS PIEZAS: B=Alfil, N=Caballo, Q=Dama, R=Torre, K=Rey.
+2. No inventes jugadas fuera de la partida.
+3. Usa la terminología española adecuada (ej: "Centro clásico", "Minorías de peones", "Casilla de escape").
 
-                ESTRUCTURA DEL CAPÍTULO:
-                1. **La Apertura y la Batalla Teórica:** Identifica el nombre de la apertura real jugada en el PGN. Explica los planes típicos de esta estructura de peones.
-                2. **Momentos Críticos (Análisis Táctico):** Identifica las jugadas clave del PGN donde la partida cambió de rumbo y explica la táctica detrás de ellas.
-                3. **El Desenlace Técnico:** Explica cómo el bando ganador impuso su ventaja (conversión de la ventaja, ataque al rey o técnica de finales) basándote en las últimas jugadas del PGN.
-                4. **Lección Estratégica:** Resume la lección conceptual más importante de esta partida.
+ESTRUCTURA DEL CAPÍTULO EDITORIAL:
+### I. Contexto Teórico y Apertura
+Identifica la apertura exacta del PGN. Discute las intenciones estratégicas detrás de la estructura de peones resultante.
 
-                Aquí tienes el PGN completo para analizar de forma estricta:\n\n${pgn}`;
+### II. Nudo Estratégico y Momentos Críticos
+Analiza las jugadas clave del PGN donde la evaluación osciló drásticamente. Utiliza citas (> ) para desglosar la profundidad psicológica o posicional.
+
+### III. Desenlace y Técnica de Conversión
+Explica el remate táctico de las últimas jugadas registradas en el PGN y los errores que permitieron la victoria.
+
+### IV. Máxima Estratégica
+Termina con una sola lección abstracta y profunda que el lector pueda aplicar en sus propias partidas.
+
+Aquí está el PGN:
+${pgn}`;
 
                 let explanation = await callAI(provider, selectedModel, apiKey, prompt);
 
-                document.getElementById('tutorResponse').innerText = explanation;
+                document.getElementById('tutorResponse').innerHTML = marked.parse(explanation);
                 document.getElementById('tutorResponse').classList.remove('hidden');
 
             } catch (error) {
