@@ -33,7 +33,7 @@
                     Guardar Key
                 </button>
                 <button onclick="scanAvailableModels()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
-                    <i class="fa-solid fa-radar text-xs mr-1"></i> Escanear Modelos
+                    <i class="fa-solid fa-radar text-xs mr-1"></i> Escanear
                 </button>
             </div>
         </div>
@@ -83,21 +83,25 @@
                     </div>
                 </div>
 
+                <!-- Selector de Modelo Manual -->
+                <div id="selectorContainer" class="hidden mb-4 bg-slate-950 border border-slate-800 rounded-xl p-4">
+                    <label for="modelSelect" class="block text-xs font-semibold text-indigo-400 mb-1.5">
+                        <i class="fa-solid fa-robot mr-1"></i> Selecciona un modelo (si uno falla por alta demanda, cambia a otro):
+                    </label>
+                    <select id="modelSelect" onchange="changeModel(this.value)" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                </div>
+
                 <!-- Estado del análisis -->
                 <div id="loading" class="hidden flex-1 flex-col items-center justify-center space-y-3">
                     <i class="fa-solid fa-spinner text-emerald-400 text-3xl animate-spin"></i>
                     <p class="text-xs text-slate-400">Analizando posición...</p>
                 </div>
 
-                <!-- Consola de Diagnóstico de Modelos -->
-                <div id="diagnosticsBox" class="hidden bg-slate-950 border border-slate-800 rounded-xl p-4 mb-4 text-xs font-mono">
-                    <p class="text-indigo-400 font-bold mb-2">📡 Resultado del Escaneo de tu Clave:</p>
-                    <div id="diagnosticsList" class="text-slate-300 space-y-1 max-h-32 overflow-y-auto"></div>
-                </div>
-
                 <div id="placeholderText" class="flex-1 flex flex-col items-center justify-center text-slate-500 text-center p-8">
                     <i class="fa-solid fa-chess-knight text-5xl mb-4 opacity-20"></i>
-                    <p class="text-xs">Navega por las jugadas. Haz clic en "Escanear Modelos" arriba para verificar qué motores de IA tiene activos tu clave.</p>
+                    <p class="text-xs">Navega por las jugadas. Haz clic en "Escanear" arriba para cargar los modelos disponibles de tu cuenta.</p>
                 </div>
 
                 <!-- Contenedor del Texto del Tutor -->
@@ -118,7 +122,7 @@
         let game = new Chess();
         let history = [];
         let currentIdx = -1;
-        let detectedModel = null; // Guardará el modelo que funcione para este usuario
+        let detectedModel = null;
 
         $(document).ready(function() {
             board = Chessboard('myBoard', {
@@ -130,7 +134,6 @@
             const savedKey = localStorage.getItem('gemini_key');
             if (savedKey) {
                 document.getElementById('apiKeyInput').value = savedKey;
-                // Escanear automáticamente si ya hay clave
                 scanAvailableModels();
             }
         });
@@ -143,52 +146,55 @@
             scanAvailableModels();
         }
 
-        // FUNCIÓN CLAVE: Pregunta a Google qué modelos tiene permitidos tu clave exacta
+        function changeModel(val) {
+            detectedModel = val;
+        }
+
+        // ESCANER Y CREADOR DEL SELECTOR DE MODELOS
         async function scanAvailableModels() {
             const apiKey = localStorage.getItem('gemini_key') || document.getElementById('apiKeyInput').value.trim();
             if (!apiKey) return;
 
-            const diagBox = document.getElementById('diagnosticsBox');
-            const diagList = document.getElementById('diagnosticsList');
-            diagBox.classList.remove('hidden');
-            diagList.innerHTML = "⌛ Conectando con los servidores de Google...";
-
+            const selectContainer = document.getElementById('selectorContainer');
+            const modelSelect = document.getElementById('modelSelect');
+            
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
                 const response = await fetch(url);
                 const data = await response.json();
 
                 if (response.ok && data.models) {
-                    diagList.innerHTML = "";
-                    // Filtrar solo los modelos de generación de texto disponibles para esta clave
+                    // Filtrar modelos válidos para generación de contenido
                     const textModels = data.models
                         .filter(m => m.supportedGenerationMethods.includes('generateContent'))
                         .map(m => m.name.replace('models/', ''));
 
                     if (textModels.length > 0) {
+                        modelSelect.innerHTML = "";
                         textModels.forEach(model => {
-                            diagList.innerHTML += `<div class="text-emerald-400"><i class="fa-solid fa-check mr-1"></i> ${model} (Disponible)</div>`;
+                            // Marcar gemini-1.5-flash-8b o gemini-1.5-flash como preferidos por defecto
+                            let selectedAttr = "";
+                            if (model === "gemini-1.5-flash-8b") {
+                                selectedAttr = "selected";
+                                detectedModel = model;
+                            } else if (!detectedModel && model === "gemini-1.5-flash") {
+                                selectedAttr = "selected";
+                                detectedModel = model;
+                            }
+                            modelSelect.innerHTML += `<option value="${model}" ${selectedAttr}>${model}</option>`;
                         });
-                        // Seleccionar el mejor modelo disponible de forma inteligente
-                        if (textModels.includes('gemini-1.5-flash')) {
-                            detectedModel = 'gemini-1.5-flash';
-                        } else if (textModels.includes('gemini-1.5-flash-latest')) {
-                            detectedModel = 'gemini-1.5-flash-latest';
-                        } else if (textModels.includes('gemini-pro')) {
-                            detectedModel = 'gemini-pro';
-                        } else {
+
+                        if(!detectedModel) {
                             detectedModel = textModels[0];
                         }
-                        diagList.innerHTML += `<div class="text-indigo-300 mt-2 font-bold"><i class="fa-solid fa-gears mr-1"></i> Modelo auto-configurado: ${detectedModel}</div>`;
-                    } else {
-                        diagList.innerHTML = `<div class="text-amber-400">⚠️ No se encontraron modelos de texto activos para esta clave.</div>`;
+
+                        selectContainer.classList.remove('hidden');
                     }
                 } else {
-                    let errMsg = data.error ? data.error.message : "Error desconocido.";
-                    diagList.innerHTML = `<div class="text-rose-400">❌ Error de Google: ${errMsg}<br><br>💡 Solución sugerida: Tu clave no tiene activado el servicio de IA. Sigue el Paso 2 de las instrucciones de Lyneitor para solucionarlo.</div>`;
+                    console.error("Error al escanear modelos");
                 }
             } catch (err) {
-                diagList.innerHTML = `<div class="text-rose-400">❌ Error de red al escanear: ${err.message}</div>`;
+                console.error("Error de red al escanear:", err);
             }
         }
 
@@ -242,7 +248,7 @@
             if (!detectedModel) {
                 document.getElementById('placeholderText').innerHTML = `
                     <i class="fa-solid fa-triangle-exclamation text-rose-500 text-3xl mb-2"></i>
-                    <p class="text-xs text-rose-400">No se ha detectado ningún modelo compatible para tu clave. Haz clic en "Escanear Modelos" arriba.</p>
+                    <p class="text-xs text-rose-400">No se ha detectado ningún modelo compatible. Haz clic en "Escanear" arriba.</p>
                 `;
                 return;
             }
@@ -261,7 +267,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     evaluation = data.pvs && data.pvs[0] ? (data.pvs[0].cp / 100).toFixed(2) : "Mate o ventaja decisiva";
-                    stockfishData = `Evaluación: ${evaluation}. Mejores jugadas: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
+                    stockfishData = `Evaluación: ${evaluation}. Mejores jugadas sugeridas por Stockfish: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
                     document.getElementById('evalBadge').innerText = `Eval Stockfish: ${evaluation}`;
                 } else {
                     document.getElementById('evalBadge').innerText = `Eval: Local`;
@@ -274,7 +280,7 @@
                 La evaluación de Stockfish es: "${stockfishData}".
                 Explica por qué ese movimiento es bueno o malo, qué planes abre y qué conceptos enseña. Sé breve e instructivo (máximo 2 párrafos).`;
 
-                // 3. Consulta al modelo auto-detectado
+                // 3. Consulta al modelo seleccionado
                 const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${detectedModel}:generateContent?key=${apiKey}`;
                 
                 const geminiResponse = await fetch(geminiUrl, {
@@ -298,7 +304,7 @@
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('tutorResponse').innerText = `Error: ${error.message}`;
+                document.getElementById('tutorResponse').innerText = `Error con el modelo "${detectedModel}":\n\n${error.message}\n\n💡 RECOMENDACIÓN: El modelo seleccionado está saturado. Por favor, selecciona otro modelo en la lista de arriba y vuelve a intentarlo.`;
                 document.getElementById('tutorResponse').classList.remove('hidden');
             } finally {
                 document.getElementById('loading').classList.add('hidden');
