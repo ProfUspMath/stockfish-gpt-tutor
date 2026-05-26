@@ -27,7 +27,7 @@
         
         <!-- Configuración de Proveedor y API Key -->
         <div class="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
-            <select id="providerSelect" onchange="handleProviderChange()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-full sm:w-44 cursor-pointer font-semibold">
+            <select id="providerSelect" onchange="handleProviderChange()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-full sm:w-40 cursor-pointer font-semibold">
                 <option value="groq">Groq (Llama 3.1 Gratis)</option>
                 <option value="openrouter">OpenRouter (Llama 3.1 Gratis)</option>
                 <option value="gemini">Google Gemini</option>
@@ -50,7 +50,7 @@
                 <h2 class="text-base font-semibold mb-3 flex items-center gap-2 text-slate-200">
                     <i class="fa-solid fa-file-import text-emerald-400"></i> Cargar Partida (PGN)
                 </h2>
-                <textarea id="pgnInput" placeholder="1. e4 e5 2. Nf3 Nc6... " 
+                <textarea id="pgnInput" placeholder="1. e4 e5 2. Nf3 Nc6..." 
                           class="w-full h-24 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 font-mono focus:outline-none focus:border-emerald-500 resize-none mb-3"></textarea>
                 
                 <div class="grid grid-cols-2 gap-3">
@@ -141,14 +141,12 @@
         let currentIdx = -1;
 
         $(document).ready(function() {
-            // Piezas vectoriales de Lichess garantizadas
             board = Chessboard('myBoard', {
                 position: 'start',
                 draggable: false,
                 pieceTheme: 'https://lichess1.org/assets/piece/cburnett/{piece}.svg'
             });
             
-            // Cargar proveedor guardado
             const savedProvider = localStorage.getItem('ai_provider') || 'groq';
             document.getElementById('providerSelect').value = savedProvider;
             
@@ -178,13 +176,11 @@
             populateModels(provider, key);
         }
 
-        // LLENADO DINÁMICO DE MODELOS SEGÚN EL PROVEEDOR
         async function populateModels(provider, key) {
             const select = document.getElementById('modelSelect');
             select.innerHTML = "";
 
             if (provider === 'groq') {
-                // Agregar Llama 3.1 Lite de forma predeterminada
                 select.innerHTML = `
                     <option value="llama-3.1-8b-instant" selected>Llama 3.1 8B (Lite - Ultra Rápido y Gratis)</option>
                     <option value="llama3-8b-8192">Llama 3 8B (Estándar)</option>
@@ -287,6 +283,7 @@
             }
         }
 
+        // PROMPT RIGUROSO PARA ANÁLISIS PASO A PASO
         async function analyzePosition(fen, lastMove) {
             const provider = document.getElementById('providerSelect').value;
             const apiKey = localStorage.getItem(`key_${provider}`);
@@ -307,26 +304,33 @@
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                // Consultar Stockfish vía Lichess Cloud Eval
                 const lichessUrl = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}`;
                 const response = await fetch(lichessUrl);
-                let stockfishData = "No disponible en Lichess";
+                let stockfishData = "No disponible";
                 let evaluation = "0.0";
 
                 if (response.ok) {
                     const data = await response.json();
                     evaluation = data.pvs && data.pvs[0] ? (data.pvs[0].cp / 100).toFixed(2) : "Mate o ventaja decisiva";
-                    stockfishData = `Evaluación: ${evaluation}. Mejores jugadas: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
+                    stockfishData = `Evaluación numérica de Stockfish: ${evaluation} (Los valores positivos benefician a las blancas, los negativos a las negras). Las mejores líneas calculadas por el motor son: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
                     document.getElementById('evalBadge').innerText = `Eval Stockfish: ${evaluation}`;
                 } else {
                     document.getElementById('evalBadge').innerText = `Eval: Local`;
-                    stockfishData = "Stockfish no tiene esta posición precalculada.";
+                    stockfishData = "No hay datos exactos de evaluación en la nube para esta posición.";
                 }
 
-                const prompt = `Eres un tutor de ajedrez muy didáctico. Explica el movimiento jugado: "${lastMove}". 
-                La posición FEN es: "${fen}".
-                La evaluación de Stockfish es: "${stockfishData}".
-                Explica por qué ese movimiento es bueno o malo, qué planes abre y qué conceptos enseña. Sé breve e instructivo (máximo 2 párrafos).`;
+                // PROMPT ULTRA-RIGUROSO DE AJEDREZ
+                const prompt = `Eres un riguroso Gran Maestro de Ajedrez y un analista técnico de élite. Tu objetivo es explicar la jugada realizada con absoluta precisión técnica, basándote estrictamente en los datos de Stockfish. Evita el texto de relleno o divagaciones.
+
+                DATOS DE LA POSICIÓN:
+                - Último movimiento jugado: "${lastMove}"
+                - Posición FEN actual: "${fen}"
+                - Datos de Stockfish: "${stockfishData}"
+
+                INSTRUCCIONES DE REDACCIÓN (Sigue esta estructura estrictamente):
+                1. **Calificación Técnica:** Comienza calificando la jugada (¿Es una jugada teórica de apertura, excelente, imprecisión, error táctico o un error grave/blunder?). Explica el porqué basándote en la evaluación numérica de Stockfish (un cambio brusco de evaluación indica error).
+                2. **Análisis de la Posición (${evaluation}):** Explica qué amenaza el movimiento jugado, qué casillas debilita o qué diagonales/columnas abre. Traduce el número de la evaluación a conceptos geométricos y estratégicos reales sobre el tablero.
+                3. **Variante del Motor:** Detalla cuál era la mejor jugada sugerida por Stockfish en lugar de la jugada realizada y muestra la línea táctica recomendada.`;
 
                 let explanation = await callAI(provider, selectedModel, apiKey, prompt);
 
@@ -342,6 +346,7 @@
             }
         }
 
+        // PROMPT RIGUROSO PARA LIBRO COMPLETO
         async function generateFullBook() {
             const provider = document.getElementById('providerSelect').value;
             const apiKey = localStorage.getItem(`key_${provider}`);
@@ -354,18 +359,25 @@
             document.getElementById('tutorTitle').innerText = "Capítulo del Libro Completo";
             document.getElementById('placeholderText').classList.add('hidden');
             document.getElementById('tutorResponse').classList.add('hidden');
-            document.getElementById('loadingText').innerText = "El Gran Maestro de IA está escribiendo tu libro completo. Esto puede tardar unos segundos...";
+            document.getElementById('loadingText').innerText = "Escribiendo un análisis de nivel de campeonato mundial...";
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                const prompt = `Actúa como un Gran Maestro de Ajedrez y un escritor literario de élite. Analiza la siguiente partida de ajedrez completa en formato PGN y escribe un análisis narrativo profundo, estructurado como un capítulo de un libro de alta escuela. 
-                El libro debe contener:
-                1. Introducción y Apertura (Identifica la teoría jugada).
-                2. El Medio Juego y Momentos Críticos (Sutilezas estratégicas y tácticas).
-                3. El Desenlace o Final del juego.
-                4. Una lección didáctica clave que nos deja esta partida.
+                // PROMPT ULTRA-RIGUROSO PARA LIBROS DE ALTA ESCUELA
+                const prompt = `Actúa como un renombrado autor de libros de ajedrez y teórico de renombre mundial (como Mark Dvoretsky o Kasparov). Escribe un capítulo técnico y didáctico analizando la partida completa en formato PGN. 
 
-                Sé elegante, instructivo, dramático y muy claro. PGN completo:\n\n${pgn}`;
+                REGLAS DE ORO PARA EL LIBRO:
+                - No uses frases banales o comentarios genéricos. Cada párrafo debe enseñar conceptos de ajedrez (estructuras de peones, control de casillas, iniciativa, etc.).
+                - Utiliza la notación algebraica para referirte a las piezas y casillas (ej. d4, Nf3, estructura Carlsbad, peón aislado).
+                - Identifica con precisión los momentos de inflexión de la partida (donde la evaluación numérica cambia drásticamente).
+
+                ESTRUCTURA DEL CAPÍTULO:
+                1. **La Apertura y la Batalla Teórica:** Identifica el nombre de la apertura y las variantes empleadas. Explica los planes típicos de esta estructura.
+                2. **El Momento Crítico (Análisis Táctico):** Selecciona las 2 o 3 jugadas clave donde se decidió el destino de la partida. Explica por qué fueron aciertos brillantes o errores conceptuales graves.
+                3. **El Desenlace Técnico:** Explica cómo el bando ganador impuso su ventaja (conversión de la ventaja, ataque al rey o técnica de finales).
+                4. **Lección Estratégica:** Resume en un párrafo la lección conceptual más importante que un jugador de torneos debe aprender de esta partida.
+
+                Aquí tienes el PGN completo para analizar:\n\n${pgn}`;
 
                 let explanation = await callAI(provider, selectedModel, apiKey, prompt);
 
@@ -381,7 +393,6 @@
             }
         }
 
-        // CONTROLADOR CENTRAL DE CONSULTAS
         async function callAI(provider, model, apiKey, prompt) {
             if (provider === 'gemini') {
                 const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -399,7 +410,6 @@
                     throw new Error(data.error ? data.error.message : "Error de respuesta de Google.");
                 }
             } else if (provider === 'groq') {
-                // CONSULTA A GROQ (Llama 3.1)
                 const groqUrl = "https://api.groq.com/openai/v1/chat/completions";
                 const response = await fetch(groqUrl, {
                     method: 'POST',
@@ -419,7 +429,6 @@
                     throw new Error(data.error ? data.error.message : "Error en Groq.");
                 }
             } else if (provider === 'openrouter') {
-                // CONSULTA A OPENROUTER (Llama 3.1)
                 const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
                 const response = await fetch(openRouterUrl, {
                     method: 'POST',
