@@ -283,7 +283,7 @@
             }
         }
 
-        // PROMPT RIGUROSO PARA ANÁLISIS PASO A PASO
+        // PROMPT RIGUROSO ANTI-CHARLATANERÍA PASO A PASO
         async function analyzePosition(fen, lastMove) {
             const provider = document.getElementById('providerSelect').value;
             const apiKey = localStorage.getItem(`key_${provider}`);
@@ -319,18 +319,26 @@
                     stockfishData = "No hay datos exactos de evaluación en la nube para esta posición.";
                 }
 
-                // PROMPT ULTRA-RIGUROSO DE AJEDREZ
-                const prompt = `Eres un riguroso Gran Maestro de Ajedrez y un analista técnico de élite. Tu objetivo es explicar la jugada realizada con absoluta precisión técnica, basándote estrictamente en los datos de Stockfish. Evita el texto de relleno o divagaciones.
+                // PROMPT ULTRA-RIGUROSO DE AJEDREZ (CON TRADUCTOR DE PIEZAS)
+                const prompt = `Eres un riguroso Gran Maestro de Ajedrez y un analista técnico de élite. Tu objetivo es explicar la jugada realizada con absoluta precisión técnica, basándote estrictamente en los datos de Stockfish.
+
+                REGLAS DE TRADUCCIÓN DE PIEZAS (PGN INGLÉS A ESPAÑOL):
+                - K = Rey (King)
+                - Q = Dama / Reina (Queen)
+                - R = Torre (Rook)
+                - B = Alfil (Bishop) [¡OJO! 'B' NUNCA ES UN CABALLO, ES UN ALFIL]
+                - N = Caballo (Knight) [¡OJO! 'N' ES UN CABALLO]
+                - Si no hay letra (ej. d4, e5, c5), es un movimiento de Peón.
 
                 DATOS DE LA POSICIÓN:
                 - Último movimiento jugado: "${lastMove}"
                 - Posición FEN actual: "${fen}"
                 - Datos de Stockfish: "${stockfishData}"
 
-                INSTRUCCIONES DE REDACCIÓN (Sigue esta estructura estrictamente):
-                1. **Calificación Técnica:** Comienza calificando la jugada (¿Es una jugada teórica de apertura, excelente, imprecisión, error táctico o un error grave/blunder?). Explica el porqué basándote en la evaluación numérica de Stockfish (un cambio brusco de evaluación indica error).
-                2. **Análisis de la Posición (${evaluation}):** Explica qué amenaza el movimiento jugado, qué casillas debilita o qué diagonales/columnas abre. Traduce el número de la evaluación a conceptos geométricos y estratégicos reales sobre el tablero.
-                3. **Variante del Motor:** Detalla cuál era la mejor jugada sugerida por Stockfish en lugar de la jugada realizada y muestra la línea táctica recomendada.`;
+                INSTRUCCIONES DE REDACCIÓN (Sigue esta estructura estrictamente, prohibido el relleno o inventar nombres de jugadas):
+                1. **Calificación Técnica:** Califica la jugada utilizando la evaluación de Stockfish (${evaluation}). Si la evaluación cayó drásticamente, decláralo un error o imprecisión. Explica qué pieza se movió usando los nombres correctos en español (¡no confundas Alfil con Caballo!).
+                2. **Análisis de la Posición:** Explica la estructura de peones, qué casillas se atacaron o defendieron con esta jugada, y qué planes tácticos reales abre para ambos bandos.
+                3. **Línea Recomendada por Stockfish:** Menciona explícitamente cuál era la jugada preferida de Stockfish para esta posición y qué puntuación le otorgaba.`;
 
                 let explanation = await callAI(provider, selectedModel, apiKey, prompt);
 
@@ -346,7 +354,7 @@
             }
         }
 
-        // PROMPT RIGUROSO PARA LIBRO COMPLETO
+        // PROMPT RIGUROSO PARA LIBRO COMPLETO (SOPORTA TRADUCCIÓN Y EVITA ALUCINACIONES)
         async function generateFullBook() {
             const provider = document.getElementById('providerSelect').value;
             const apiKey = localStorage.getItem(`key_${provider}`);
@@ -363,21 +371,25 @@
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                // PROMPT ULTRA-RIGUROSO PARA LIBROS DE ALTA ESCUELA
-                const prompt = `Actúa como un renombrado autor de libros de ajedrez y teórico de renombre mundial (como Mark Dvoretsky o Kasparov). Escribe un capítulo técnico y didáctico analizando la partida completa en formato PGN. 
+                const prompt = `Actúa como un renombrado autor de libros de ajedrez y teórico de renombre mundial. Escribe un capítulo técnico y didáctico analizando la partida completa en formato PGN. 
 
-                REGLAS DE ORO PARA EL LIBRO:
-                - No uses frases banales o comentarios genéricos. Cada párrafo debe enseñar conceptos de ajedrez (estructuras de peones, control de casillas, iniciativa, etc.).
-                - Utiliza la notación algebraica para referirte a las piezas y casillas (ej. d4, Nf3, estructura Carlsbad, peón aislado).
-                - Identifica con precisión los momentos de inflexión de la partida (donde la evaluación numérica cambia drásticamente).
+                REGLAS DE ORO TOTALMENTE OBLIGATORIAS:
+                1. **PROHIBIDO INVENTAR JUGADAS:** No menciones jugadas que no estén en el PGN provisto.
+                2. **TRADUCCIÓN CORRECTA DE PIEZAS:** Recuerda que en el PGN:
+                   - B = Alfil (Bishop). ¡B no es un caballo!
+                   - N = Caballo (Knight).
+                   - Q = Dama (Queen).
+                   - R = Torre (Rook).
+                   - K = Rey (King).
+                3. **SOPORTE TÉCNICO REAL:** Usa términos teóricos reales en español (flanco de rey, flanco de dama, iniciativa, peón aislado, debilidad de casillas). Prohibido inventar términos como "ala ciego" o "llave de rey".
 
                 ESTRUCTURA DEL CAPÍTULO:
-                1. **La Apertura y la Batalla Teórica:** Identifica el nombre de la apertura y las variantes empleadas. Explica los planes típicos de esta estructura.
-                2. **El Momento Crítico (Análisis Táctico):** Selecciona las 2 o 3 jugadas clave donde se decidió el destino de la partida. Explica por qué fueron aciertos brillantes o errores conceptuales graves.
-                3. **El Desenlace Técnico:** Explica cómo el bando ganador impuso su ventaja (conversión de la ventaja, ataque al rey o técnica de finales).
-                4. **Lección Estratégica:** Resume en un párrafo la lección conceptual más importante que un jugador de torneos debe aprender de esta partida.
+                1. **La Apertura y la Batalla Teórica:** Identifica el nombre de la apertura real jugada en el PGN. Explica los planes típicos de esta estructura de peones.
+                2. **Momentos Críticos (Análisis Táctico):** Identifica las jugadas clave del PGN donde la partida cambió de rumbo y explica la táctica detrás de ellas.
+                3. **El Desenlace Técnico:** Explica cómo el bando ganador impuso su ventaja (conversión de la ventaja, ataque al rey o técnica de finales) basándote en las últimas jugadas del PGN.
+                4. **Lección Estratégica:** Resume la lección conceptual más importante de esta partida.
 
-                Aquí tienes el PGN completo para analizar:\n\n${pgn}`;
+                Aquí tienes el PGN completo para analizar de forma estricta:\n\n${pgn}`;
 
                 let explanation = await callAI(provider, selectedModel, apiKey, prompt);
 
