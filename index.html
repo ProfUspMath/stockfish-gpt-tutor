@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stockfish Gemini Chess Tutor</title>
+    <title>Tutor de Ajedrez Inteligente Pro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chessboard.js CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <!-- Chessboard.js CSS (Estable vía CDNJS) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
     <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -16,26 +16,26 @@
     <!-- Header -->
     <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 max-w-7xl w-full mx-auto">
         <div class="flex items-center gap-3">
-            <i class="fa-solid fa-graduation-cap text-emerald-400 text-2xl"></i>
+            <i class="fa-solid fa-book-open text-emerald-400 text-2xl"></i>
             <div>
                 <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
-                    Stockfish Gemini Tutor
+                    Tutor de Ajedrez IA Pro
                 </h1>
-                <p class="text-xs text-slate-400">Análisis didáctico gratuito con Google Gemini y Stockfish</p>
+                <p class="text-xs text-slate-400">Análisis didáctico interactivo y generación de libros</p>
             </div>
         </div>
-        <!-- Configuración de API Key -->
+        
+        <!-- Configuración de API Key y Proveedor -->
         <div class="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
-            <input type="password" id="apiKeyInput" placeholder="Pega tu Google Gemini API Key" 
+            <select id="providerSelect" onchange="handleProviderChange()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-full sm:w-40 cursor-pointer font-semibold">
+                <option value="gemini">Google Gemini</option>
+                <option value="openrouter">OpenRouter (Llama 3)</option>
+            </select>
+            <input type="password" id="apiKeyInput" placeholder="Pega tu API Key" 
                    class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 w-full sm:w-64">
-            <div class="flex gap-2 w-full sm:w-auto">
-                <button onclick="saveApiKey()" class="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
-                    Guardar Key
-                </button>
-                <button onclick="scanAvailableModels()" class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
-                    <i class="fa-solid fa-radar text-xs mr-1"></i> Escanear
-                </button>
-            </div>
+            <button onclick="saveApiKey()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0">
+                Guardar Key
+            </button>
         </div>
     </header>
 
@@ -44,19 +44,27 @@
         
         <!-- Panel Izquierdo -->
         <div class="lg:col-span-5 space-y-6">
+            <!-- Cargador de PGN -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                 <h2 class="text-base font-semibold mb-3 flex items-center gap-2 text-slate-200">
                     <i class="fa-solid fa-file-import text-emerald-400"></i> Cargar Partida (PGN)
                 </h2>
                 <textarea id="pgnInput" placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5..." 
                           class="w-full h-24 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 font-mono focus:outline-none focus:border-emerald-500 resize-none mb-3"></textarea>
-                <button onclick="loadPgn()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> Cargar y Sincronizar Tablero
-                </button>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="loadPgn()" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-chess-board"></i> Cargar Tablero
+                    </button>
+                    <button onclick="generateFullBook()" class="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-book"></i> Generar Libro Completo
+                    </button>
+                </div>
             </div>
 
-            <!-- Tablero -->
+            <!-- Tablero y Navegación -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center">
+                <!-- Tablero de Ajedrez -->
                 <div id="myBoard" class="w-full max-w-[340px] rounded-lg overflow-hidden shadow-2xl border-4 border-slate-800"></div>
                 
                 <!-- Controles -->
@@ -68,136 +76,97 @@
                         Siguiente <i class="fa-solid fa-chevron-right"></i>
                     </button>
                 </div>
+
+                <!-- Lista de Jugadas Clickables -->
+                <div class="w-full mt-4 border-t border-slate-800 pt-4">
+                    <p class="text-xs text-slate-400 mb-2 font-semibold"><i class="fa-solid fa-list-ol mr-1"></i> Lista de jugadas (Haz clic para saltar a una posición):</p>
+                    <div id="moveList" class="flex flex-wrap gap-1 max-h-32 overflow-y-auto bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs">
+                        <!-- Se llena dinámicamente -->
+                        <span class="text-slate-600 italic">Carga un PGN para ver las jugadas aquí...</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Panel Derecho -->
+        <!-- Panel Derecho: Explicación del Tutor / Libro -->
         <div class="lg:col-span-7">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 shadow-xl h-full flex flex-col min-h-[450px]">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 shadow-xl h-full flex flex-col min-h-[500px]">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
                     <h2 class="text-lg font-bold flex items-center gap-2 text-slate-200">
-                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i> Explicación del Tutor (Gemini)
+                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i> <span id="tutorTitle">Explicación del Tutor</span>
                     </h2>
                     <div id="evalBadge" class="bg-slate-950 text-emerald-400 px-3 py-1 rounded-full text-xs font-mono border border-slate-800">
                         Eval: Estático
                     </div>
                 </div>
 
-                <!-- Selector de Modelo Manual -->
-                <div id="selectorContainer" class="hidden mb-4 bg-slate-950 border border-slate-800 rounded-xl p-4">
-                    <label for="modelSelect" class="block text-xs font-semibold text-indigo-400 mb-1.5">
-                        <i class="fa-solid fa-robot mr-1"></i> Selecciona un modelo (si uno falla por alta demanda, cambia a otro):
-                    </label>
-                    <select id="modelSelect" onchange="changeModel(this.value)" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
-                        <!-- Se llena dinámicamente -->
-                    </select>
-                </div>
-
                 <!-- Estado del análisis -->
                 <div id="loading" class="hidden flex-1 flex-col items-center justify-center space-y-3">
                     <i class="fa-solid fa-spinner text-emerald-400 text-3xl animate-spin"></i>
-                    <p class="text-xs text-slate-400">Analizando posición...</p>
+                    <p id="loadingText" class="text-xs text-slate-400">La IA está analizando la posición...</p>
                 </div>
 
                 <div id="placeholderText" class="flex-1 flex flex-col items-center justify-center text-slate-500 text-center p-8">
                     <i class="fa-solid fa-chess-knight text-5xl mb-4 opacity-20"></i>
-                    <p class="text-xs">Navega por las jugadas. Haz clic en "Escanear" arriba para cargar los modelos disponibles de tu cuenta.</p>
+                    <p class="text-xs">Navega por las jugadas o haz clic en "Generar Libro Completo" para redactar el análisis de toda la partida de un solo golpe.</p>
                 </div>
 
                 <!-- Contenedor del Texto del Tutor -->
-                <div id="tutorResponse" class="hidden flex-1 overflow-y-auto text-slate-300 text-sm leading-relaxed font-serif whitespace-pre-line max-h-[400px]">
+                <div id="tutorResponse" class="hidden flex-1 overflow-y-auto text-slate-300 text-sm leading-relaxed font-serif whitespace-pre-line max-h-[500px]">
                     <!-- Aquí se inyecta la respuesta -->
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Scripts -->
+    <!-- Scripts (Estables vía CDNJS) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
 
     <script>
         let board = null;
         let game = new Chess();
         let history = [];
         let currentIdx = -1;
-        let detectedModel = null;
 
         $(document).ready(function() {
+            // Inicializar tablero con piezas estables de CDNJS
             board = Chessboard('myBoard', {
                 position: 'start',
                 draggable: false,
-                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+                pieceTheme: 'https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/img/chesspieces/wikipedia/{piece}.png'
             });
             
-            const savedKey = localStorage.getItem('gemini_key');
-            if (savedKey) {
-                document.getElementById('apiKeyInput').value = savedKey;
-                scanAvailableModels();
-            }
+            // Cargar proveedor y clave guardados
+            const savedProvider = localStorage.getItem('ai_provider') || 'gemini';
+            document.getElementById('providerSelect').value = savedProvider;
+            
+            loadSavedKey();
         });
 
+        function handleProviderChange() {
+            const provider = document.getElementById('providerSelect').value;
+            localStorage.setItem('ai_provider', provider);
+            loadSavedKey();
+        }
+
+        function loadSavedKey() {
+            const provider = localStorage.getItem('ai_provider') || 'gemini';
+            const savedKey = localStorage.getItem(`key_${provider}`) || '';
+            document.getElementById('apiKeyInput').value = savedKey;
+        }
+
         function saveApiKey() {
+            const provider = document.getElementById('providerSelect').value;
             const key = document.getElementById('apiKeyInput').value.trim();
             if(!key) return alert('Por favor ingresa una clave válida.');
-            localStorage.setItem('gemini_key', key);
-            alert('¡Google Gemini API Key guardada localmente!');
-            scanAvailableModels();
-        }
-
-        function changeModel(val) {
-            detectedModel = val;
-        }
-
-        // ESCANER Y CREADOR DEL SELECTOR DE MODELOS
-        async function scanAvailableModels() {
-            const apiKey = localStorage.getItem('gemini_key') || document.getElementById('apiKeyInput').value.trim();
-            if (!apiKey) return;
-
-            const selectContainer = document.getElementById('selectorContainer');
-            const modelSelect = document.getElementById('modelSelect');
             
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (response.ok && data.models) {
-                    // Filtrar modelos válidos para generación de contenido
-                    const textModels = data.models
-                        .filter(m => m.supportedGenerationMethods.includes('generateContent'))
-                        .map(m => m.name.replace('models/', ''));
-
-                    if (textModels.length > 0) {
-                        modelSelect.innerHTML = "";
-                        textModels.forEach(model => {
-                            // Marcar gemini-1.5-flash-8b o gemini-1.5-flash como preferidos por defecto
-                            let selectedAttr = "";
-                            if (model === "gemini-1.5-flash-8b") {
-                                selectedAttr = "selected";
-                                detectedModel = model;
-                            } else if (!detectedModel && model === "gemini-1.5-flash") {
-                                selectedAttr = "selected";
-                                detectedModel = model;
-                            }
-                            modelSelect.innerHTML += `<option value="${model}" ${selectedAttr}>${model}</option>`;
-                        });
-
-                        if(!detectedModel) {
-                            detectedModel = textModels[0];
-                        }
-
-                        selectContainer.classList.remove('hidden');
-                    }
-                } else {
-                    console.error("Error al escanear modelos");
-                }
-            } catch (err) {
-                console.error("Error de red al escanear:", err);
-            }
+            localStorage.setItem(`key_${provider}`, key);
+            alert('¡API Key guardada correctamente!');
         }
 
+        // CARGAR EL PGN Y CREAR EL HISTORIAL INTERACTIVO
         function loadPgn() {
             const pgn = document.getElementById('pgnInput').value;
             if (!pgn) return alert('Por favor, introduce un PGN válido.');
@@ -209,6 +178,31 @@
 
             history = game.history({ verbose: true });
             currentIdx = history.length - 1;
+            
+            renderMoveList();
+            updateBoardToCurrent();
+        }
+
+        // DIBUJAR LA LISTA DE JUGADAS HACIÉNDOLAS CLICKABLES
+        function renderMoveList() {
+            const container = document.getElementById('moveList');
+            container.innerHTML = "";
+
+            history.forEach((move, idx) => {
+                const moveNum = idx % 2 === 0 ? `${Math.floor(idx / 2) + 1}. ` : '';
+                const activeClass = idx === currentIdx ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-900 hover:bg-slate-800 text-slate-300';
+                
+                container.innerHTML += `
+                    <button onclick="jumpToMove(${idx})" class="px-2 py-1 rounded transition-colors ${activeClass}">
+                        ${moveNum}${move.san}
+                    </button>
+                `;
+            });
+        }
+
+        function jumpToMove(idx) {
+            currentIdx = idx;
+            renderMoveList();
             updateBoardToCurrent();
         }
 
@@ -224,6 +218,7 @@
         function prevMove() {
             if (currentIdx > -1) {
                 currentIdx--;
+                renderMoveList();
                 updateBoardToCurrent();
             }
         }
@@ -231,83 +226,141 @@
         function nextMove() {
             if (currentIdx < history.length - 1) {
                 currentIdx++;
+                renderMoveList();
                 updateBoardToCurrent();
             }
         }
 
+        // LLAMADA A LA IA (PASO A PASO)
         async function analyzePosition(fen, lastMove) {
-            const apiKey = localStorage.getItem('gemini_key');
+            const provider = document.getElementById('providerSelect').value;
+            const apiKey = localStorage.getItem(`key_${provider}`);
+
             if (!apiKey) {
                 document.getElementById('placeholderText').innerHTML = `
                     <i class="fa-solid fa-key text-amber-500 text-3xl mb-2"></i>
-                    <p class="text-xs text-amber-400">Guarda tu Google Gemini API Key arriba para recibir el análisis.</p>
+                    <p class="text-xs text-amber-400">Guarda tu API Key arriba para recibir el análisis.</p>
                 `;
                 return;
             }
 
-            if (!detectedModel) {
-                document.getElementById('placeholderText').innerHTML = `
-                    <i class="fa-solid fa-triangle-exclamation text-rose-500 text-3xl mb-2"></i>
-                    <p class="text-xs text-rose-400">No se ha detectado ningún modelo compatible. Haz clic en "Escanear" arriba.</p>
-                `;
-                return;
-            }
-
+            document.getElementById('tutorTitle').innerText = "Explicación del Tutor";
             document.getElementById('placeholderText').classList.add('hidden');
             document.getElementById('tutorResponse').classList.add('hidden');
+            document.getElementById('loadingText').innerText = "La IA está analizando la jugada...";
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                // 1. Obtener datos de Stockfish de Lichess
+                // Consultar Stockfish vía Lichess Cloud Eval
                 const lichessUrl = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}`;
                 const response = await fetch(lichessUrl);
-                let stockfishData = "No disponible en la nube de Lichess";
+                let stockfishData = "No disponible en Lichess";
                 let evaluation = "0.0";
 
                 if (response.ok) {
                     const data = await response.json();
                     evaluation = data.pvs && data.pvs[0] ? (data.pvs[0].cp / 100).toFixed(2) : "Mate o ventaja decisiva";
-                    stockfishData = `Evaluación: ${evaluation}. Mejores jugadas sugeridas por Stockfish: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
+                    stockfishData = `Evaluación: ${evaluation}. Mejores jugadas: ${data.pvs ? data.pvs.map(p => p.moves).join(', ') : 'N/A'}`;
                     document.getElementById('evalBadge').innerText = `Eval Stockfish: ${evaluation}`;
                 } else {
                     document.getElementById('evalBadge').innerText = `Eval: Local`;
-                    stockfishData = "Stockfish no tiene esta posición precalculada en Lichess.";
+                    stockfishData = "Stockfish no tiene esta posición precalculada.";
                 }
 
-                // 2. Prompt de Ajedrez
                 const prompt = `Eres un tutor de ajedrez muy didáctico. Explica el movimiento jugado: "${lastMove}". 
                 La posición actual en FEN es: "${fen}".
                 La evaluación de Stockfish es: "${stockfishData}".
                 Explica por qué ese movimiento es bueno o malo, qué planes abre y qué conceptos enseña. Sé breve e instructivo (máximo 2 párrafos).`;
 
-                // 3. Consulta al modelo seleccionado
-                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${detectedModel}:generateContent?key=${apiKey}`;
-                
-                const geminiResponse = await fetch(geminiUrl, {
+                let explanation = await callAI(provider, apiKey, prompt);
+
+                document.getElementById('tutorResponse').innerText = explanation;
+                document.getElementById('tutorResponse').classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('tutorResponse').innerText = `Error: ${error.message}`;
+                document.getElementById('tutorResponse').classList.remove('hidden');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        // GENERACIÓN DE LIBRO COMPLETO (DE PRINCIPIO A FIN)
+        async function generateFullBook() {
+            const provider = document.getElementById('providerSelect').value;
+            const apiKey = localStorage.getItem(`key_${provider}`);
+            const pgn = document.getElementById('pgnInput').value;
+
+            if (!pgn) return alert('Por favor, introduce un PGN válido para analizar la partida completa.');
+            if (!apiKey) return alert('Por favor, guarda tu API Key arriba primero.');
+
+            document.getElementById('tutorTitle').innerText = "Capítulo del Libro Completo";
+            document.getElementById('placeholderText').classList.add('hidden');
+            document.getElementById('tutorResponse').classList.add('hidden');
+            document.getElementById('loadingText').innerText = "El Gran Maestro de IA está escribiendo tu libro de principio a fin (esto puede tardar unos segundos)...";
+            document.getElementById('loading').classList.remove('hidden');
+
+            try {
+                const prompt = `Actúa como un Gran Maestro de Ajedrez y un escritor literario de élite. Tu tarea es analizar la siguiente partida de ajedrez completa en formato PGN y escribir un análisis narrativo profundo, estructurado como un capítulo de un libro de alta escuela. 
+                El libro debe contener:
+                1. Introducción y Apertura (Identifica la teoría jugada).
+                2. El Medio Juego y Momentos Críticos (Sutilezas estratégicas y tácticas).
+                3. El Desenlace o Final del juego.
+                4. Una lección didáctica clave que nos deja esta partida.
+
+                Sé elegante, instructivo, dramático y muy claro. Aquí tienes el PGN completo:\n\n${pgn}`;
+
+                let explanation = await callAI(provider, apiKey, prompt);
+
+                document.getElementById('tutorResponse').innerText = explanation;
+                document.getElementById('tutorResponse').classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('tutorResponse').innerText = `Error al generar el libro: ${error.message}`;
+                document.getElementById('tutorResponse').classList.remove('hidden');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        // FUNCIÓN AUXILIAR PARA CONSULTAR GOOGLE O OPENROUTER
+        async function callAI(provider, apiKey, prompt) {
+            if (provider === 'gemini') {
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(geminiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }]
                     })
                 });
-
-                const geminiData = await geminiResponse.json();
-
-                if (geminiResponse.ok && geminiData.candidates && geminiData.candidates[0].content) {
-                    const explanation = geminiData.candidates[0].content.parts[0].text;
-                    document.getElementById('tutorResponse').innerText = explanation;
-                    document.getElementById('tutorResponse').classList.remove('hidden');
+                const data = await response.json();
+                if (response.ok && data.candidates) {
+                    return data.candidates[0].content.parts[0].text;
                 } else {
-                    let errMsg = geminiData.error ? geminiData.error.message : "Error desconocido.";
-                    throw new Error(errMsg);
+                    throw new Error(data.error ? data.error.message : "Error en Gemini.");
                 }
-
-            } catch (error) {
-                console.error(error);
-                document.getElementById('tutorResponse').innerText = `Error con el modelo "${detectedModel}":\n\n${error.message}\n\n💡 RECOMENDACIÓN: El modelo seleccionado está saturado. Por favor, selecciona otro modelo en la lista de arriba y vuelve a intentarlo.`;
-                document.getElementById('tutorResponse').classList.remove('hidden');
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
+            } else {
+                const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
+                const response = await fetch(openRouterUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: "meta-llama/llama-3-8b-instruct:free",
+                        messages: [{ role: "user", content: prompt }]
+                    })
+                });
+                const data = await response.json();
+                if (response.ok && data.choices) {
+                    return data.choices[0].message.content;
+                } else {
+                    throw new Error(data.error ? data.error.message : "Error en OpenRouter.");
+                }
             }
         }
     </script>
